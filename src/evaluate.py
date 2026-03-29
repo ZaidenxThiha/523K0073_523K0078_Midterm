@@ -1,165 +1,91 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
-
 import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
+import pandas as pd
 import torch
-import torch.nn as nn
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
-def accuracy_from_logits(logits: torch.Tensor, labels: torch.Tensor) -> float:
-    preds = logits.argmax(dim=1)
-    correct = (preds == labels).float().sum().item()
-    return correct / len(labels)
-
-
-def evaluate(
-    model: nn.Module,
-    dataloader: DataLoader,
-    criterion: nn.Module,
-    device: torch.device,
-) -> Tuple[float, float]:
+def evaluate_loader(model, loader, criterion, device):
+    """Evaluate a sequence model loader and return aggregate metrics plus per-row outputs."""
     model.eval()
-    total_loss, total_acc, total_samples = 0.0, 0.0, 0
-    with torch.no_grad():
-        for batch_x, batch_y in tqdm(dataloader, desc="eval", leave=False):
-            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-            logits = model(batch_x)
-            loss = criterion(logits, batch_y)
-            total_loss += loss.item() * len(batch_y)
-            total_acc += accuracy_from_logits(logits, batch_y) * len(batch_y)
-            total_samples += len(batch_y)
-    return total_loss / total_samples, total_acc / total_samples
-
-
-def predict(
-    model: nn.Module, dataloader: DataLoader, device: torch.device
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """
-    Run the model over a dataloader and collect logits/preds/labels on CPU for analysis.
-    """
-    model.eval()
-    logits_list, preds_list, labels_list = [], [], []
+    total_loss = 0.0
+    total_items = 0
+    all_labels = []
+    all_preds = []
+    all_rows = []
 
     with torch.no_grad():
-        for batch_x, batch_y in tqdm(dataloader, desc="predict", leave=False):
-            batch_x = batch_x.to(device)
-            logits = model(batch_x)
+        for input_ids, lengths, labels, texts in loader:
+            input_ids = input_ids.to(device)
+            lengths = lengths.to(device)
+            labels = labels.to(device)
+            logits = model(input_ids, lengths)
+            loss = criterion(logits, labels)
+            probs = torch.softmax(logits, dim=1)
             preds = logits.argmax(dim=1)
-            logits_list.append(logits.cpu())
-            preds_list.append(preds.cpu())
-            labels_list.append(batch_y.cpu())
+            batch_size = labels.size(0)
+            total_loss += loss.item() * batch_size
+            total_items += batch_size
+            labels_cpu = labels.cpu().tolist()
+            preds_cpu = preds.cpu().tolist()
+            probs_cpu = probs.cpu().tolist()
+            all_labels.extend(labels_cpu)
+            all_preds.extend(preds_cpu)
+            for text, true_label, pred_label, prob_pair in zip(texts, labels_cpu, preds_cpu, probs_cpu):
+                all_rows.append(
+                    {
+                        "text": text,
+                        "true_label": true_label,
+                        "predicted_label": pred_label,
+                        "confidence_negative": float(prob_pair[0]),
+                        "confidence_positive": float(prob_pair[1]),
+                        "is_correct": int(true_label == pred_label),
+                    }
+                )
 
-    return torch.cat(logits_list), torch.cat(preds_list), torch.cat(labels_list)
-
-
-def classification_metrics(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
-    target_names: Optional[Sequence[str]] = None,
-) -> Dict[str, object]:
-    """
-    Compute accuracy, classification report, and confusion matrix from logits/labels.
-    target_names (e.g., ["neg", "pos"]) makes reports easier to read.
-    """
-    y_true = labels.cpu().numpy()
-    y_pred = logits.argmax(dim=1).cpu().numpy()
-
+    precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average="binary", zero_division=0)
     return {
-        "accuracy": float(accuracy_score(y_true, y_pred)),
-        "report": classification_report(y_true, y_pred, target_names=target_names, output_dict=True, zero_division=0),
-        "confusion_matrix": confusion_matrix(y_true, y_pred),
+        "loss": total_loss / total_items,
+        "accuracy": accuracy_score(all_labels, all_preds),
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "rows": all_rows,
     }
 
 
-def plot_learning_curves(
-    history: Dict[str, Iterable[float]],
-    save_path: Optional[str] = None,
-    title: str = "Learning curves",
-):
-    """
-    Plot train/val loss and accuracy from the history returned by train_model.
-    Optionally save the figure to save_path.
-    """
-    epochs = range(1, len(history.get("train_loss", [])) + 1)
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-
-    axes[0].plot(epochs, history.get("train_loss", []), label="train")
-    axes[0].plot(epochs, history.get("val_loss", []), label="val")
+def plot_learning_curves(history_df: pd.DataFrame, title: str):
+    """Plot train/validation loss and accuracy from an epoch-by-epoch history frame."""
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    axes[0].plot(history_df["epoch"], history_df["train_loss"], marker="o", label="Train loss")
+    axes[0].plot(history_df["epoch"], history_df["val_loss"], marker="o", label="Validation loss")
+    axes[0].set_title(f"{title}: Loss")
     axes[0].set_xlabel("Epoch")
-    axes[0].set_ylabel("Loss")
-    axes[0].set_title("Loss")
     axes[0].legend()
-
-    axes[1].plot(epochs, history.get("train_acc", []), label="train")
-    axes[1].plot(epochs, history.get("val_acc", []), label="val")
+    axes[1].plot(history_df["epoch"], history_df["train_accuracy"], marker="o", label="Train accuracy")
+    axes[1].plot(history_df["epoch"], history_df["val_accuracy"], marker="o", label="Validation accuracy")
+    axes[1].set_title(f"{title}: Accuracy")
     axes[1].set_xlabel("Epoch")
-    axes[1].set_ylabel("Accuracy")
-    axes[1].set_title("Accuracy")
     axes[1].legend()
-
-    fig.suptitle(title)
     fig.tight_layout()
-
-    if save_path:
-        fig.savefig(save_path, bbox_inches="tight")
-
-    return fig, axes
+    return fig
 
 
-def misclassified_examples(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
-    texts: Optional[Sequence[str]] = None,
-    limit: Optional[int] = 20,
-) -> List[Dict[str, object]]:
-    """
-    Return a list of misclassified examples for manual error analysis.
-    If `texts` is provided, it should align with the dataloader order used to produce logits.
-    """
-    preds = logits.argmax(dim=1)
-    mismatches = (preds != labels).nonzero(as_tuple=False).flatten().tolist()
-    results: List[Dict[str, object]] = []
-
-    for idx in mismatches[: limit or len(mismatches)]:
-        item: Dict[str, object] = {
-            "index": int(idx),
-            "pred": int(preds[idx].item()),
-            "label": int(labels[idx].item()),
-        }
-        if texts is not None and idx < len(texts):
-            item["text"] = texts[idx]
-        results.append(item)
-
-    return results
+def top_misclassified_examples(rows: list[dict], max_examples: int = 10) -> pd.DataFrame:
+    """Return the highest-confidence misclassified predictions."""
+    errors = [row for row in rows if not row["is_correct"]]
+    errors = sorted(errors, key=lambda row: max(row["confidence_negative"], row["confidence_positive"]), reverse=True)
+    return pd.DataFrame(errors[:max_examples])
 
 
-def plot_confusion_matrix(
-    cm: np.ndarray,
-    target_names: Sequence[str],
-    normalize: bool = True,
-    cmap: str = "Blues",
-):
-    """Plot a confusion matrix with optional normalization."""
-    cm_to_plot = cm.astype("float")
-    if normalize and cm_to_plot.sum(axis=1, keepdims=True).any():
-        cm_to_plot = cm_to_plot / cm_to_plot.sum(axis=1, keepdims=True)
-
-    plt.figure(figsize=(4.5, 4))
-    sns.heatmap(
-        cm_to_plot,
-        annot=True,
-        fmt=".2f" if normalize else "d",
-        cmap=cmap,
-        xticklabels=target_names,
-        yticklabels=target_names,
-        cbar=False,
-    )
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.tight_layout()
+def build_summary_table(results_df: pd.DataFrame) -> pd.DataFrame:
+    """Format a model-comparison DataFrame into the report summary table layout."""
+    summary_df = results_df.copy()
+    summary_df["Model"] = summary_df["model"]
+    summary_df["Acc."] = summary_df["accuracy"].round(4)
+    summary_df["Prec."] = summary_df["precision"].round(4)
+    summary_df["Recall"] = summary_df["recall"].round(4)
+    summary_df["F1"] = summary_df["f1"].round(4)
+    summary_df["Time/epoch"] = summary_df["time_per_epoch_sec"].round(2)
+    return summary_df[["Model", "Acc.", "Prec.", "Recall", "F1", "Time/epoch"]]

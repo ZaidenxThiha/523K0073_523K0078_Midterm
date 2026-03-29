@@ -1,0 +1,143 @@
+{
+  "recurrent_results_export": [
+    {
+      "model": "Vanilla RNN",
+      "variant": "rnn",
+      "accuracy": 0.6677,
+      "precision": 0.6756020942408377,
+      "recall": 0.6452,
+      "f1": 0.6600511508951407,
+      "time_per_epoch_sec": 115.84443195660909,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/rnn_best.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/rnn_learning_curves.png"
+    },
+    {
+      "model": "LSTM",
+      "variant": "lstm",
+      "accuracy": 0.7757,
+      "precision": 0.7690806168260784,
+      "recall": 0.788,
+      "f1": 0.7784253679739208,
+      "time_per_epoch_sec": 135.37752135594687,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/lstm_best.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/lstm_learning_curves.png"
+    },
+    {
+      "model": "GRU",
+      "variant": "gru",
+      "accuracy": 0.8268,
+      "precision": 0.7838776928422516,
+      "recall": 0.9024,
+      "f1": 0.8389735961323912,
+      "time_per_epoch_sec": 145.57005834579468,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/gru_best.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_learning_curves.png"
+    }
+  ],
+  "embedding_ablation_export": [
+    {
+      "model": "GRU",
+      "variant": "gru",
+      "embed_dim": 64,
+      "accuracy": 0.855,
+      "precision": 0.8406909788867563,
+      "recall": 0.876,
+      "f1": 0.8579823702252694,
+      "time_per_epoch_sec": 122.81371609369914,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/gru_emb_64.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_emb_64_learning_curves.png"
+    },
+    {
+      "model": "GRU",
+      "variant": "gru",
+      "embed_dim": 128,
+      "accuracy": 0.8191,
+      "precision": 0.776660308652679,
+      "recall": 0.8958,
+      "f1": 0.8319866258010588,
+      "time_per_epoch_sec": 141.95352594057718,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/gru_emb_128.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_emb_128_learning_curves.png"
+    },
+    {
+      "model": "GRU",
+      "variant": "gru",
+      "embed_dim": 256,
+      "accuracy": 0.8394,
+      "precision": 0.8271010023130301,
+      "recall": 0.8582,
+      "f1": 0.8423635649784059,
+      "time_per_epoch_sec": 221.44959259033203,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/gru_emb_256.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_emb_256_learning_curves.png"
+    }
+  ],
+  "layer_ablation_export": [
+    {
+      "model": "GRU",
+      "variant": "gru",
+      "num_layers": 1,
+      "accuracy": 0.8102,
+      "precision": 0.7574701195219123,
+      "recall": 0.9126,
+      "f1": 0.8278301886792453,
+      "time_per_epoch_sec": 144.08929363886514,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/gru_1layer.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_1layer_learning_curves.png"
+    },
+    {
+      "model": "GRU",
+      "variant": "gru",
+      "num_layers": 2,
+      "accuracy": 0.8767,
+      "precision": 0.8435163231807404,
+      "recall": 0.925,
+      "f1": 0.8823809978059716,
+      "time_per_epoch_sec": 320.9939703146617,
+      "checkpoint_path": "/Users/admin/Downloads/New project/checkpoints/gru_2layer.pt",
+      "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_2layer_learning_curves.png"
+    }
+  ],
+  "figure_paths_export": {
+    "variant_comparison": [
+      {
+        "model": "Vanilla RNN",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/rnn_learning_curves.png"
+      },
+      {
+        "model": "LSTM",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/lstm_learning_curves.png"
+      },
+      {
+        "model": "GRU",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_learning_curves.png"
+      }
+    ],
+    "embedding_ablation": [
+      {
+        "model": "GRU (embed=64)",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_emb_64_learning_curves.png"
+      },
+      {
+        "model": "GRU (embed=128)",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_emb_128_learning_curves.png"
+      },
+      {
+        "model": "GRU (embed=256)",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_emb_256_learning_curves.png"
+      }
+    ],
+    "layer_ablation": [
+      {
+        "model": "GRU (1 layer)",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_1layer_learning_curves.png"
+      },
+      {
+        "model": "GRU (2 layer)",
+        "figure_path": "/Users/admin/Downloads/New project/checkpoints/figures/gru_2layer_learning_curves.png"
+      }
+    ]
+  },
+  "best_recurrent_checkpoint": "../checkpoints/rnn_best.pt",
+  "best_recurrent_variant": "gru"
+}
