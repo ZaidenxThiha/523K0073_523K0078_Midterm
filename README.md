@@ -1,4 +1,4 @@
-# ID1_ID2_Midterm
+# 523K0073_523K0078_Midterm
 
 Deep Learning midterm project for IMDb sentiment analysis, comparing an MLP baseline with recurrent models implemented in native PyTorch.
 
