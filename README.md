@@ -9,7 +9,7 @@ Team submission:
 | Member | Student ID | Contribution |
 | --- | --- | --- |
 | Thiha Aung | 523K0073 | Preprocessing, MLP experiments, notebook integration, README |
-| Thin Lei Sandi | 523K0078 | Recurrent-model experiments, comparative analysis, report preparation |
+| Thin Lei Sandi | 523K0075 | Recurrent-model experiments, comparative analysis, report preparation |
 
 ## Project Structure
 
